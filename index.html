@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Should I Go? —  Avvari's Vacation Weather Planner</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --sky: #0a1628;
+    --sky-mid: #0d2240;
+    --sky-glow: #1a3a6b;
+    --gold: #f0b429;
+    --gold-light: #fdd87a;
+    --white: #f8f5ef;
+    --muted: #8a9bb5;
+    --card-bg: rgba(255,255,255,0.04);
+    --card-border: rgba(255,255,255,0.08);
+    --good: #4ade80;
+    --warn: #fbbf24;
+    --bad: #f87171;
+    --radius: 16px;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--sky);
+    color: var(--white);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── BACKGROUND ── */
+  .bg {
+    position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    background: radial-gradient(ellipse 120% 80% at 50% -10%, #1a3a6b 0%, #0a1628 55%);
+  }
+  .bg::before {
+    content: '';
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(ellipse 40% 30% at 20% 80%, rgba(240,180,41,0.06) 0%, transparent 70%),
+      radial-gradient(ellipse 40% 30% at 80% 70%, rgba(74,222,128,0.04) 0%, transparent 70%);
+  }
+  .stars {
+    position: absolute; inset: 0;
+    background-image:
+      radial-gradient(1px 1px at 10% 15%, rgba(255,255,255,0.6) 0%, transparent 100%),
+      radial-gradient(1px 1px at 30% 8%, rgba(255,255,255,0.4) 0%, transparent 100%),
+      radial-gradient(1.5px 1.5px at 55% 5%, rgba(255,255,255,0.7) 0%, transparent 100%),
+      radial-gradient(1px 1px at 75% 12%, rgba(255,255,255,0.3) 0%, transparent 100%),
+      radial-gradient(1px 1px at 90% 6%, rgba(255,255,255,0.5) 0%, transparent 100%),
+      radial-gradient(1px 1px at 15% 30%, rgba(255,255,255,0.3) 0%, transparent 100%),
+      radial-gradient(1px 1px at 45% 25%, rgba(255,255,255,0.4) 0%, transparent 100%),
+      radial-gradient(1px 1px at 68% 20%, rgba(255,255,255,0.35) 0%, transparent 100%),
+      radial-gradient(1px 1px at 85% 28%, rgba(255,255,255,0.25) 0%, transparent 100%),
+      radial-gradient(2px 2px at 5% 50%, rgba(255,255,255,0.2) 0%, transparent 100%),
+      radial-gradient(1px 1px at 95% 45%, rgba(255,255,255,0.3) 0%, transparent 100%);
+  }
+
+  /* ── LAYOUT ── */
+  .wrap { position: relative; z-index: 1; max-width: 860px; margin: 0 auto; padding: 0 24px 80px; }
+
+  /* ── HEADER ── */
+  header {
+    padding: 72px 0 48px;
+    text-align: center;
+    animation: fadeDown 0.8s ease both;
+  }
+  .eyebrow {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.25em;
+    color: var(--gold);
+    text-transform: uppercase;
+    margin-bottom: 20px;
+    opacity: 0.9;
+  }
+  h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(48px, 8vw, 88px);
+    line-height: 0.95;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin-bottom: 8px;
+  }
+  h1 em {
+    font-style: italic;
+    color: var(--gold);
+  }
+  .subtitle {
+    font-size: 15px;
+    color: var(--muted);
+    margin-top: 16px;
+    font-weight: 300;
+    letter-spacing: 0.01em;
+  }
+
+  /* ── FORM CARD ── */
+  .form-card {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 24px;
+    padding: 40px;
+    backdrop-filter: blur(20px);
+    animation: fadeUp 0.8s 0.2s ease both;
+    margin-bottom: 40px;
+  }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 16px;
+    align-items: end;
+  }
+
+  @media (max-width: 600px) {
+    .form-grid { grid-template-columns: 1fr; }
+    .form-card { padding: 24px; }
+  }
+
+  .field { display: flex; flex-direction: column; gap: 8px; }
+  .field label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .field input {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 10px;
+    color: var(--white);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    padding: 13px 16px;
+    outline: none;
+    transition: border-color 0.2s, background 0.2s;
+    width: 100%;
+  }
+  .field input:focus {
+    border-color: var(--gold);
+    background: rgba(240,180,41,0.07);
+  }
+  .field input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: invert(0.6) sepia(1) saturate(2) hue-rotate(5deg);
+    cursor: pointer;
+  }
+  .field input::placeholder { color: rgba(138,155,181,0.5); }
+
+  /* ── AUTOCOMPLETE ── */
+  .autocomplete-wrap { position: relative; }
+  .suggestions {
+    position: absolute; top: calc(100% + 6px); left: 0; right: 0;
+    background: #162035;
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 10px;
+    overflow: hidden;
+    z-index: 100;
+    max-height: 200px;
+    overflow-y: auto;
+    display: none;
+  }
+  .suggestions.open { display: block; }
+  .suggestion-item {
+    padding: 10px 16px;
+    font-size: 13px;
+    cursor: pointer;
+    color: var(--white);
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    transition: background 0.15s;
+  }
+  .suggestion-item:last-child { border-bottom: none; }
+  .suggestion-item:hover { background: rgba(240,180,41,0.12); }
+  .suggestion-item .sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+  /* ── BUTTON ── */
+  .btn {
+    background: var(--gold);
+    color: #0a1628;
+    border: none;
+    border-radius: 10px;
+    padding: 14px 28px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    width: 100%;
+    letter-spacing: 0.01em;
+    transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+    box-shadow: 0 4px 24px rgba(240,180,41,0.25);
+    position: relative;
+    overflow: hidden;
+  }
+  .btn:hover { background: var(--gold-light); transform: translateY(-1px); box-shadow: 0 8px 32px rgba(240,180,41,0.35); }
+  .btn:active { transform: translateY(0); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+  /* ── LOADER ── */
+  .loader {
+    display: none;
+    text-align: center;
+    padding: 60px 0;
+    animation: fadeUp 0.4s ease both;
+  }
+  .loader.show { display: block; }
+  .spinner {
+    width: 48px; height: 48px;
+    border: 2px solid rgba(240,180,41,0.2);
+    border-top-color: var(--gold);
+    border-radius: 50%;
+    margin: 0 auto 20px;
+    animation: spin 0.8s linear infinite;
+  }
+  .loader p { color: var(--muted); font-size: 14px; font-family: 'DM Mono', monospace; letter-spacing: 0.08em; }
+
+  /* ── VERDICT ── */
+  .verdict-card {
+    display: none;
+    border-radius: 24px;
+    padding: 40px;
+    margin-bottom: 32px;
+    animation: fadeUp 0.6s ease both;
+    position: relative;
+    overflow: hidden;
+  }
+  .verdict-card.show { display: block; }
+  .verdict-card.good { background: linear-gradient(135deg, rgba(74,222,128,0.12), rgba(74,222,128,0.04)); border: 1px solid rgba(74,222,128,0.25); }
+  .verdict-card.warn { background: linear-gradient(135deg, rgba(251,191,36,0.12), rgba(251,191,36,0.04)); border: 1px solid rgba(251,191,36,0.25); }
+  .verdict-card.bad  { background: linear-gradient(135deg, rgba(248,113,113,0.12), rgba(248,113,113,0.04)); border: 1px solid rgba(248,113,113,0.25); }
+
+  .verdict-emoji { font-size: 56px; margin-bottom: 16px; display: block; }
+  .verdict-headline {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(28px, 5vw, 42px);
+    font-weight: 700;
+    margin-bottom: 8px;
+    line-height: 1.1;
+  }
+  .verdict-card.good .verdict-headline { color: #4ade80; }
+  .verdict-card.warn .verdict-headline { color: #fbbf24; }
+  .verdict-card.bad  .verdict-headline { color: #f87171; }
+  .verdict-sub { color: var(--muted); font-size: 15px; line-height: 1.6; max-width: 560px; }
+  .verdict-meta {
+    margin-top: 20px;
+    display: flex; gap: 24px; flex-wrap: wrap;
+  }
+  .verdict-stat {
+    background: rgba(255,255,255,0.05);
+    border-radius: 10px;
+    padding: 10px 16px;
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+  }
+  .verdict-stat .val { font-size: 20px; font-weight: 500; display: block; margin-bottom: 2px; }
+  .verdict-stat .lbl { color: var(--muted); font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; }
+
+  /* ── DAILY BREAKDOWN ── */
+  .section-title {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 16px;
+    display: none;
+  }
+  .section-title.show { display: block; }
+
+  .days-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+    gap: 12px;
+    margin-bottom: 40px;
+  }
+
+  .day-card {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius);
+    padding: 16px 12px;
+    text-align: center;
+    animation: fadeUp 0.5s ease both;
+    transition: transform 0.2s, border-color 0.2s;
+    cursor: default;
+  }
+  .day-card:hover { transform: translateY(-3px); border-color: rgba(255,255,255,0.18); }
+  .day-card.good-day { border-color: rgba(74,222,128,0.2); }
+  .day-card.warn-day { border-color: rgba(251,191,36,0.2); }
+  .day-card.bad-day  { border-color: rgba(248,113,113,0.2); }
+
+  .day-name { font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+  .day-date { font-size: 11px; color: rgba(248,245,239,0.5); margin-bottom: 10px; }
+  .day-icon { font-size: 28px; margin-bottom: 8px; display: block; }
+  .day-temp { font-size: 18px; font-weight: 600; margin-bottom: 4px; }
+  .day-temp .low { font-size: 13px; color: var(--muted); font-weight: 400; }
+  .day-desc { font-size: 10px; color: var(--muted); line-height: 1.4; margin-bottom: 8px; }
+  .day-badge {
+    display: inline-block;
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 20px;
+    font-family: 'DM Mono', monospace;
+  }
+  .day-badge.good { background: rgba(74,222,128,0.15); color: #4ade80; }
+  .day-badge.warn { background: rgba(251,191,36,0.15); color: #fbbf24; }
+  .day-badge.bad  { background: rgba(248,113,113,0.15); color: #f87171; }
+
+  /* ── ERROR ── */
+  .error-msg {
+    display: none;
+    background: rgba(248,113,113,0.08);
+    border: 1px solid rgba(248,113,113,0.2);
+    border-radius: var(--radius);
+    padding: 20px 24px;
+    color: #f87171;
+    font-size: 14px;
+    animation: fadeUp 0.4s ease both;
+    margin-bottom: 24px;
+  }
+  .error-msg.show { display: block; }
+
+  /* ── NOTE ── */
+  .api-note {
+    text-align: center;
+    font-size: 12px;
+    color: rgba(138,155,181,0.4);
+    font-family: 'DM Mono', monospace;
+    letter-spacing: 0.05em;
+    margin-top: 16px;
+  }
+
+  /* ── ANIMATIONS ── */
+  @keyframes fadeDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes fadeUp   { from { opacity: 0; transform: translateY(20px);  } to { opacity: 1; transform: translateY(0); } }
+  @keyframes spin     { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<div class="bg"><div class="stars"></div></div>
+
+<div class="wrap">
+  <header>
+    <p class="eyebrow">✦ Vacation Weather Oracle ✦</p>
+    <h1>Should<br>I <em>Go?</em></h1>
+    <p class="subtitle">Enter your destination & dates — we'll tell you if the weather is worth it.</p>
+  </header>
+
+  <div class="form-card">
+    <div class="form-grid">
+      <div class="field" style="grid-column: 1 / -1;">
+        <label>Destination</label>
+        <div class="autocomplete-wrap">
+          <input type="text" id="location" placeholder="e.g. Berlin, Paris, Tokyo…" autocomplete="off">
+          <div class="suggestions" id="suggestions"></div>
+        </div>
+      </div>
+      <div class="field">
+        <label>From</label>
+        <input type="date" id="date-from">
+      </div>
+      <div class="field">
+        <label>To</label>
+        <input type="date" id="date-to">
+      </div>
+      <div class="field">
+        <button class="btn" id="check-btn" onclick="checkWeather()">Check Weather →</button>
+      </div>
+    </div>
+    <p class="api-note">Powered by Open-Meteo · free · no API key needed · up to 16 days ahead</p>
+  </div>
+
+  <div class="error-msg" id="error-msg"></div>
+  <div class="loader" id="loader"><div class="spinner"></div><p>Reading the skies…</p></div>
+
+  <div class="verdict-card" id="verdict-card">
+    <span class="verdict-emoji" id="verdict-emoji"></span>
+    <div class="verdict-headline" id="verdict-headline"></div>
+    <div class="verdict-sub" id="verdict-sub"></div>
+    <div class="verdict-meta" id="verdict-meta"></div>
+  </div>
+
+  <p class="section-title" id="section-title">Day-by-Day Forecast</p>
+  <div class="days-grid" id="days-grid"></div>
+</div>
+
+<script>
+// ── State ──────────────────────────────────────────────
+let selectedLocation = null;
+let suggestTimeout = null;
+
+// ── Helpers ────────────────────────────────────────────
+const $ = id => document.getElementById(id);
+const today = () => new Date().toISOString().split('T')[0];
+
+function setDefaults() {
+  const t = new Date();
+  const from = new Date(t); from.setDate(t.getDate() + 3);
+  const to   = new Date(t); to.setDate(t.getDate() + 10);
+  $('date-from').value = from.toISOString().split('T')[0];
+  $('date-to').value   = to.toISOString().split('T')[0];
+  $('date-from').min = today();
+  $('date-to').min   = today();
+}
+
+function showError(msg) {
+  const el = $('error-msg');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 6000);
+}
+function hideError() { $('error-msg').classList.remove('show'); }
+
+// ── Geocoding (Open-Meteo geocoding API) ──────────────
+async function fetchSuggestions(q) {
+  if (q.length < 2) return [];
+  const res = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=6&language=en&format=json`);
+  const data = await res.json();
+  return data.results || [];
+}
+
+$('location').addEventListener('input', function() {
+  clearTimeout(suggestTimeout);
+  const q = this.value.trim();
+  selectedLocation = null;
+  if (!q) { closeSuggestions(); return; }
+  suggestTimeout = setTimeout(async () => {
+    const results = await fetchSuggestions(q);
+    renderSuggestions(results);
+  }, 280);
+});
+
+function renderSuggestions(results) {
+  const box = $('suggestions');
+  if (!results.length) { box.classList.remove('open'); return; }
+  box.innerHTML = results.map((r, i) => `
+    <div class="suggestion-item" onclick="selectLocation(${i})" data-i="${i}">
+      <div>${r.name}${r.admin1 ? ', ' + r.admin1 : ''}</div>
+      <div class="sub">${r.country || ''} · ${r.latitude.toFixed(2)}°, ${r.longitude.toFixed(2)}°</div>
+    </div>
+  `).join('');
+  box.dataset.results = JSON.stringify(results);
+  box.classList.add('open');
+}
+
+function selectLocation(i) {
+  const results = JSON.parse($('suggestions').dataset.results || '[]');
+  const r = results[i];
+  if (!r) return;
+  selectedLocation = { lat: r.latitude, lon: r.longitude, name: r.name, country: r.country || '', admin1: r.admin1 || '' };
+  $('location').value = r.name + (r.admin1 ? ', ' + r.admin1 : '') + (r.country ? ', ' + r.country : '');
+  closeSuggestions();
+}
+
+function closeSuggestions() { $('suggestions').classList.remove('open'); }
+document.addEventListener('click', e => { if (!e.target.closest('.autocomplete-wrap')) closeSuggestions(); });
+
+// ── Weather Code → Info ────────────────────────────────
+function weatherInfo(code, precip, maxTemp) {
+  const sunny = [0,1]; const partlyCloud = [2,3];
+  const fog   = [45,48];
+  const drizzle=[51,53,55,56,57];
+  const rain  =[61,63,65,66,67,80,81,82];
+  const snow  =[71,73,75,77,85,86];
+  const storm =[95,96,99];
+  const thunder=[96,99];
+
+  if (sunny.includes(code))      return { icon:'☀️', desc:'Sunny',      score: precip < 2 ? 10 : 7 };
+  if (partlyCloud.includes(code)) return { icon:'⛅', desc:'Partly Cloudy', score: precip < 5 ? 8 : 6 };
+  if (fog.includes(code))        return { icon:'🌫️', desc:'Foggy',      score: 5 };
+  if (drizzle.includes(code))    return { icon:'🌦️', desc:'Drizzle',    score: 4 };
+  if (rain.includes(code))       return { icon:'🌧️', desc:'Rainy',      score: precip > 15 ? 2 : 3 };
+  if (snow.includes(code))       return { icon:'❄️', desc:'Snowy',      score: 3 };
+  if (storm.includes(code))      return { icon:'⛈️', desc:'Thunderstorm', score: 1 };
+  return { icon:'🌡️', desc:'Variable', score: 5 };
+}
+
+function tempScore(max) {
+  if (max >= 22 && max <= 30) return 10;
+  if (max >= 18 && max < 22)  return 8;
+  if (max >= 30 && max <= 34) return 7;
+  if (max >= 14 && max < 18)  return 6;
+  if (max > 34 && max <= 38)  return 5;
+  if (max >= 8  && max < 14)  return 4;
+  if (max > 38)               return 3;
+  return 2;
+}
+
+function dayRating(score) {
+  if (score >= 7.5) return { label: 'Great', cls: 'good' };
+  if (score >= 5)   return { label: 'Ok',    cls: 'warn' };
+  return                   { label: 'Poor',  cls: 'bad'  };
+}
+
+function dateLabel(dateStr) {
+  const d = new Date(dateStr + 'T12:00:00');
+  return { day: d.toLocaleDateString('en-GB', { weekday: 'short' }), date: d.toLocaleDateString('en-GB', { day:'numeric', month:'short' }) };
+}
+
+// ── Main ───────────────────────────────────────────────
+async function checkWeather() {
+  hideError();
+  const locInput = $('location').value.trim();
+  const from = $('date-from').value;
+  const to   = $('date-to').value;
+
+  // Validation
+  if (!locInput) return showError('Please enter a destination.');
+  if (!selectedLocation) return showError('Please select a location from the dropdown suggestions.');
+  if (!from || !to)   return showError('Please select both dates.');
+  if (from > to)      return showError('Start date must be before end date.');
+
+  // Date range limits
+  const maxForecast = new Date(); maxForecast.setDate(maxForecast.getDate() + 16);
+  if (new Date(from) > maxForecast) return showError('Forecasts are only available up to 16 days ahead.');
+
+  const dayCount = Math.round((new Date(to) - new Date(from)) / 86400000) + 1;
+  if (dayCount > 16) return showError('Please select a range of 16 days or fewer.');
+
+  // Show loader, hide results
+  $('loader').classList.add('show');
+  $('verdict-card').classList.remove('show');
+  $('days-grid').innerHTML = '';
+  $('section-title').classList.remove('show');
+  $('check-btn').disabled = true;
+
+  try {
+    const { lat, lon, name, country, admin1 } = selectedLocation;
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
+      `&daily=weathercode,temperature_2m_max,temperature_2m_min,precipitation_sum,windspeed_10m_max,uv_index_max` +
+      `&timezone=auto&start_date=${from}&end_date=${to}`;
+
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('Weather API error');
+    const data = await res.json();
+
+    const d = data.daily;
+    const days = d.time.map((date, i) => {
+      const info = weatherInfo(d.weathercode[i], d.precipitation_sum[i] || 0, d.temperature_2m_max[i]);
+      const ts = tempScore(d.temperature_2m_max[i]);
+      const precipPenalty = (d.precipitation_sum[i] || 0) > 10 ? -2 : (d.precipitation_sum[i] || 0) > 5 ? -1 : 0;
+      const windPenalty = (d.windspeed_10m_max[i] || 0) > 40 ? -2 : (d.windspeed_10m_max[i] || 0) > 25 ? -1 : 0;
+      const score = Math.max(0, Math.min(10, (info.score + ts) / 2 + precipPenalty + windPenalty));
+      return { date, code: d.weathercode[i], max: d.temperature_2m_max[i], min: d.temperature_2m_min[i], precip: d.precipitation_sum[i] || 0, wind: d.windspeed_10m_max[i] || 0, uv: d.uv_index_max[i] || 0, icon: info.icon, desc: info.desc, score };
+    });
+
+    const avgScore = days.reduce((s, d) => s + d.score, 0) / days.length;
+    const goodDays = days.filter(d => d.score >= 7.5).length;
+    const badDays  = days.filter(d => d.score < 5).length;
+    const avgMax   = days.reduce((s, d) => s + d.max, 0) / days.length;
+    const avgPrecip= days.reduce((s, d) => s + d.precip, 0) / days.length;
+    const locationDisplay = name + (admin1 ? ', ' + admin1 : '') + (country ? ', ' + country : '');
+
+    renderVerdict(locationDisplay, days.length, avgScore, goodDays, badDays, avgMax, avgPrecip);
+    renderDays(days);
+
+  } catch(e) {
+    showError('Could not fetch weather data. Please check your connection or try again.');
+    console.error(e);
+  } finally {
+    $('loader').classList.remove('show');
+    $('check-btn').disabled = false;
+  }
+}
+
+function renderVerdict(location, totalDays, avgScore, goodDays, badDays, avgMax, avgPrecip) {
+  const vc = $('verdict-card');
+  vc.className = 'verdict-card';
+
+  let emoji, headline, sub, cls;
+  const pct = goodDays / totalDays;
+
+  if (avgScore >= 7.5 && badDays === 0) {
+    cls = 'good'; emoji = '🌟'; headline = 'Absolutely go!';
+    sub = `${location} looks gorgeous for your trip. Expect warm, sunny days with minimal rain — you picked the right time.`;
+  } else if (avgScore >= 7 && pct >= 0.6) {
+    cls = 'good'; emoji = '✈️'; headline = 'Great time to visit!';
+    sub = `${location} looks lovely during your stay. ${goodDays} of ${totalDays} days should be excellent. Pack light and enjoy!`;
+  } else if (avgScore >= 5.5) {
+    cls = 'warn'; emoji = '🤔'; headline = 'Worth going, but be prepared.';
+    sub = `${location} has mixed weather for your dates. Bring a light jacket and an umbrella — ${badDays > 0 ? badDays + ' day(s) look rough' : 'some cloudy stretches ahead'}.`;
+  } else if (avgScore >= 4) {
+    cls = 'warn'; emoji = '☁️'; headline = 'Possible, but not ideal.';
+    sub = `The weather in ${location} during your trip isn't great. Consider indoor activities as backup — ${badDays} day(s) look especially difficult.`;
+  } else {
+    cls = 'bad'; emoji = '⚠️'; headline = 'Maybe reschedule?';
+    sub = `${location} has quite rough weather for your dates. Heavy rain, storms, or extreme temperatures are expected for most of your stay.`;
+  }
+
+  vc.classList.add(cls, 'show');
+  $('verdict-emoji').textContent = emoji;
+  $('verdict-headline').textContent = headline;
+  $('verdict-sub').textContent = sub;
+  $('verdict-meta').innerHTML = `
+    <div class="verdict-stat"><span class="val">${avgMax.toFixed(0)}°C</span><span class="lbl">Avg High</span></div>
+    <div class="verdict-stat"><span class="val">${avgPrecip.toFixed(1)}mm</span><span class="lbl">Avg Daily Rain</span></div>
+    <div class="verdict-stat"><span class="val">${goodDays}/${totalDays}</span><span class="lbl">Good Days</span></div>
+    <div class="verdict-stat"><span class="val">${avgScore.toFixed(1)}/10</span><span class="lbl">Trip Score</span></div>
+  `;
+}
+
+function renderDays(days) {
+  const grid = $('days-grid');
+  $('section-title').classList.add('show');
+  grid.innerHTML = '';
+  days.forEach((d, i) => {
+    const rating = dayRating(d.score);
+    const lbl = dateLabel(d.date);
+    const card = document.createElement('div');
+    card.className = `day-card ${rating.cls}-day`;
+    card.style.animationDelay = `${i * 0.06}s`;
+    card.innerHTML = `
+      <div class="day-name">${lbl.day}</div>
+      <div class="day-date">${lbl.date}</div>
+      <span class="day-icon">${d.icon}</span>
+      <div class="day-temp">${d.max.toFixed(0)}° <span class="low">${d.min.toFixed(0)}°</span></div>
+      <div class="day-desc">${d.desc}<br>${d.precip > 0 ? d.precip.toFixed(1)+'mm' : 'No rain'}</div>
+      <span class="day-badge ${rating.cls}">${rating.label}</span>
+    `;
+    grid.appendChild(card);
+  });
+}
+
+// ── Init ───────────────────────────────────────────────
+setDefaults();
+</script>
+</body>
+</html>
